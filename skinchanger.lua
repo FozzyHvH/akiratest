@@ -208,7 +208,7 @@ do
             guns = {
                 ['[Revolver]'] = {
                     location = meshes.Shadow.RevolverGhost,
-                    equipped = false,
+                    equipped = true,
                     C0 = newCFrame(1.52587891e-05, 0, 0, 1, 0, 8.74227766e-08, 0, 1, 0, -8.74227766e-08, 0, 1)
                 },
                 ['[Double-Barrel SG]'] = {
@@ -278,7 +278,7 @@ do
                 },
                 ['[TacticalShotgun]'] = {
                     location = meshes.Shadow.TacticalShotgunGhost,
-                    equipped = false,
+                    equipped = true,
                     C0 = newCFrame(-0.148262024, 0, 0, 1, 0, 8.74227766e-08, 0, 1, 0, -8.74227766e-08, 0, 1)
                 }
             }
@@ -292,11 +292,11 @@ do
                     location = meshes.GoldenAge.Revolver,
                     equipped = false,
                     C0 = newCFrame(0.0295257568, 0.0725820661, -0.000946044922, 1, -4.89858741e-16, -7.98081238e-23, 4.89858741e-16, 1, 3.2584137e-07, -7.98081238e-23, -3.2584137e-07, 1),
-                    shoot_sound = 'rbxassetid://16388054681'
+                    shoot_sound = 'rbxassetid://18276961899'
                 },
                 ['[Double-Barrel SG]'] = {
                     location = meshes.GoldenAge['Double Barrel'],
-                    equipped = false,
+                    equipped = true,
                     shoot_sound = 'rbxassetid://4915503055',
                     C0 = newCFrame(-0.00664520264, 0.0538104773, 0.0124816895, -1, 4.89858741e-16, 7.98081238e-23, 4.89858741e-16, 1, 3.2584137e-07, 7.98081238e-23, 3.2584137e-07, -1)
                 }
