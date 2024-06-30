@@ -292,7 +292,7 @@ do
                     location = meshes.GoldenAge.Revolver,
                     equipped = false,
                     C0 = newCFrame(0.0295257568, 0.0725820661, -0.000946044922, 1, -4.89858741e-16, -7.98081238e-23, 4.89858741e-16, 1, 3.2584137e-07, -7.98081238e-23, -3.2584137e-07, 1),
-                    shoot_sound = 'rbxassetid://1898322396'
+                    shoot_sound = 'rbxassetid://16388054681'
                 },
                 ['[Double-Barrel SG]'] = {
                     location = meshes.GoldenAge['Double Barrel'],
