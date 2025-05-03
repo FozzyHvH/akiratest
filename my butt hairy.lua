@@ -3518,30 +3518,6 @@ end)
 
 
 do -- frameworks
-	function framework:desync()
-		local flags = Library.Flags
-        if flags["desyncenable"] and desyncenabled and LocalPlayer.Character then
-            C_Desync["OldPosition"] = LocalPlayer.Character.HumanoidRootPart.CFrame
-            local Origin = LocalPlayer.Character.HumanoidRootPart
-			local TargOrigin = SilentAimTarget and SilentAimTarget.Character and SilentAimTarget.Character.HumanoidRootPart
-            local randomRange = flags["random range"]
-			LocalPlayer.Character.HumanoidRootPart.CFrame = (CFrame.new(TargOrigin.Position) + Vector3.new(math.random(-randomRange, randomRange), math.random(-randomRange, randomRange), math.random(-randomRange, randomRange))) * CFrame.Angles(math.rad(math.random(-180, 180)), math.rad(math.random(-180, 180)), math.rad(math.random(-180, 180)))
-            if flags["visualize"] then 
-                bodyClone:SetPrimaryPartCFrame(LocalPlayer.Character.HumanoidRootPart.CFrame)	
-                visualizeChams.FillColor = col1 or Color3.new(1, 0, 0)
-                visualizeChams.FillTransparency = 0.5
-                visualizeChams.OutlineColor = col2 or Color3.new(1, 0, 0)
-                visualizeChams.OutlineTransparency = 0.5
-            end
-
-            game:GetService("RunService").RenderStepped:Wait()
-            
-            LocalPlayer.Character.HumanoidRootPart.CFrame = C_Desync["OldPosition"]
-            framework:cfspd()
-        else 
-            bodyClone:SetPrimaryPartCFrame(CFrame.new(9999,9999,9999))	
-    end
-end
     function framework:aimbot()
         local flags = Library.Flags
         local userinputservice = game:GetService("UserInputService")
@@ -3817,13 +3793,6 @@ end
                 end
                 return oldIndex(obj, key, ...)
             end)
-			local __index
-			__index = hookmetamethod(game, "__index", LPH_NO_VIRTUALIZE(function(Self, Index)
-				if not checkcaller() and flags["desyncenable"] and C_Desync["OldPosition"] and Index == "CFrame" and Self == LocalPlayer.Character.HumanoidRootPart then
-					return C_Desync["OldPosition"]
-				end
-				return __index(Self, Index)
-			end))
         end
     end
 
