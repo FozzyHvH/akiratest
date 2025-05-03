@@ -1,13 +1,272 @@
--- made by portal
--- example at bottom
+-- if not getgenv().directory then
+--     game.Players.LocalPlayer:Kick("Script directory was not found!\nNOTE: THE SERVER MAY BE DOWN \nplease dm 1catlol if you have entered yours correctly")
+--     wait(3)
+--     game.Players.LocalPlayer:Destroy()
+--     return LPH_CRASH()
+-- end
+
+-- hookfunction security
+local exe_name, exe_version = identifyexecutor()
+local function home999() end
+local function home888() end
+
+if exe_name ~= "Wave Windows" then
+    hookfunction(home888, home999)
+    if isfunctionhooked(home888) == false then
+        game.Players.LocalPlayer:Destroy()
+        return LPH_CRASH()
+    end
+end 
+
+local function check_env(env)
+    for _, func in env do
+        if type(func) ~= "function" then
+            continue
+        end
+
+        local functionhook = isfunctionhooked(func)
+
+        if functionhook then
+            game.Players.LocalPlayer:Destroy()
+            return LPH_CRASH()
+        end
+    end
+end
+
+check_env( getgenv() )
+check_env( getrenv() )
+--
+
+local Lua_Fetch_Connections = getconnections
+local Lua_Fetch_Upvalues = getupvalues
+local Lua_Hook = hookfunction 
+local Lua_Hook_Method = hookmetamethod
+local Lua_Unhook = restorefunction
+local Lua_Replace_Function = replaceclosure
+local Lua_Set_Upvalue = setupvalue
+local Lua_Clone_Function = clonefunction
+
+local Game_RunService = game:GetService("RunService")
+local Game_LogService = game:GetService("LogService")
+local Game_LogService_MessageOut = Game_LogService.MessageOut
+
+local String_Lower = string.lower
+local Table_Find = table.find
+local Get_Type = type
+
+local Current_Connections = {};
+local Hooked_Connections = {};
+
+local function Test_Table(Table, Return_Type)
+for TABLE_INDEX, TABLE_VALUE in Table do
+    if type(TABLE_VALUE) == String_Lower(Return_Type) then
+        return TABLE_VALUE, TABLE_INDEX
+    end
+
+    continue
+end
+end
+
+local function Print_Table(Table)
+table.foreach(Table, print)
+end
+
+if getgenv().DEBUG then
+print("[auth.injected.live] Waiting...")
+end
+
+local good_check = 0
+
+function auth_heart()
+-- local avalible = pcall(function() return loadstring(game:HttpGet("https://auth.injected.live/" .. directory))() end)
+
+-- if (not avalible or not game:HttpGet("https://auth.injected.live/" .. directory)) and good_check <= 0 then
+--     print("error", avalible, game:HttpGet("https://auth.injected.live/" .. directory))
+--     game.Players.LocalPlayer:Destroy()
+--     return LPH_CRASH()
+-- end
+
+return true , true
+end
+
+function Lua_Common_Intercept(old, ...)
+print(...)
+return old(...)
+end
+
+function XVNP_L(CONNECTION)
+local s, e = pcall(function()
+    local OPENAC_TABLE = Lua_Fetch_Upvalues(CONNECTION.Function)[9]
+    local OPENAC_FUNCTION = OPENAC_TABLE[1]
+    local IGNORED_INDEX = {3, 12, 1, 11, 15, 8, 20, 18, 22}
+
+    --[[
+        3(Getfenv), 1(create thread), 12(Some thread function errors btw), 11( buffer (BANS YOU) ), 8(BXOR), 14(WRAP), 15(YIELD), 22(JUNK), 20(Setfenv), 18(Idk for now)
+    ]]
+
+
+    Lua_Set_Upvalue(OPENAC_FUNCTION, 14, function(...)
+        return function(...)
+            local args = {...}
+
+            if type(args[1]) == "table" and args[1][1] then
+                pcall(function()
+                    if type(args[1][1]) == "userdata" then
+                        args[1][1]:Disconnect()
+                        args[1][2]:Disconnect()
+                        args[1][3]:Disconnect()
+                        args[1][4]:Disconnect()
+                        --warn("[XVNP] DISCONNECTING CURRENT FUNCTIONS")
+                    end
+
+                    --Print_Table(args[1])
+                end)
+            end 
+        end
+    end)
+
+    Lua_Set_Upvalue(OPENAC_FUNCTION, 1, function(...)
+        task.wait(200)
+    end)
+
+    hookfunction(OPENAC_FUNCTION, function(...)
+        --warn("[XVNP DEBUG]", ...)
+        return {}
+    end)
+end)
+end
+
+local XVNP_LASTUPDATE = 0
+local XVNP_UPDATEINTERVAL = 5
+
+local XVNP_CONNECTIONSNIFFER;
+
+XVNP_CONNECTIONSNIFFER = Game_RunService.RenderStepped:Connect(function()
+if #Lua_Fetch_Connections(Game_LogService_MessageOut) >= 2 then
+    --print("[XVNP] emulator overflow")
+    XVNP_CONNECTIONSNIFFER:Disconnect()
+end
+
+if tick() - XVNP_LASTUPDATE >= XVNP_UPDATEINTERVAL then
+    XVNP_LASTUPDATE = tick() 
+
+    local OpenAc_Connections = Lua_Fetch_Connections(Game_LogService_MessageOut)
+
+    for _, CONNECTION in OpenAc_Connections do
+        if not table.find(Current_Connections, CONNECTION) then
+            table.insert(Current_Connections, CONNECTION)
+            table.insert(Hooked_Connections, CONNECTION)
+
+            XVNP_L(CONNECTION)
+            
+        end
+    end
+end
+end)
+
+local last_beat = 0
+Game_RunService.RenderStepped:Connect(function()
+if last_beat + 1 < tick() then
+    last_beat = tick() + 1 
+
+    local what, are = auth_heart()
+
+    if not are or not what then
+        if good_check <= 0 then
+            game.Players.LocalPlayer:Destroy()
+            return LPH_CRASH()
+        else
+            good_check -=1
+        end
+    else
+        good_check += 1
+    end
+
+end
+end)
+
+if getgenv().DEBUG then
+print("started emulation thread")
+end
+
+
+getfenv().LPH_NO_VIRTUALIZE = function(f) return f end;
+
+-- // anticheat bypass above
 local Library = {};
 --
 local RunService = game:GetService("RunService");
 local framework = {connections = {}};
 local Players = game:GetService("Players")
+local SilentAimTarget = nil
+local SilentAimLocked = false
 local LocalPlr = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
+local Camera = Workspace.CurrentCamera
+local PreviousGun, PreviousAmmo = nil, nil
+local framework = {connections = {}};
+local C_Desync = {Enabled = false, OldPosition = nil}
+local bodyClone = game:GetObjects("rbxassetid://8246626421")[1]; bodyClone.Humanoid:Destroy(); bodyClone.Head.Face:Destroy(); bodyClone.Parent = game.Workspace; bodyClone.HumanoidRootPart.Velocity = Vector3.new(); bodyClone.HumanoidRootPart.CFrame = CFrame.new(9999,9999,9999); bodyClone.HumanoidRootPart.Transparency = 1; bodyClone.HumanoidRootPart.CanCollide = false
+for _, part in pairs(bodyClone:GetDescendants()) do
+    if part:IsA("BasePart") then
+        part.CanCollide = false
+        part.Transparency = 0.5
+        part.Color = Color3.new(0.937254, 0.058823, 1)
+    end
+end
+local visualizeChams = Instance.new("Highlight"); visualizeChams.Enabled = true; visualizeChams.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; visualizeChams.FillColor = Color3.fromRGB(102, 60, 153); visualizeChams.OutlineColor =  Color3.fromRGB(0, 0, 0); visualizeChams.Adornee = bodyClone; visualizeChams.OutlineTransparency = 0.2; visualizeChams.FillTransparency = 0.5; visualizeChams.Parent = game.CoreGui 
+local col1, col2 = nil, nil
+local desyncenabled = nil
+local checks; 
+-- hit sounds! yaay
+getgenv().hitsounds = {
+    ["Bubble"] = "rbxassetid://6534947588",
+    ["Lazer"] = "rbxassetid://130791043",
+    ["Pick"] = "rbxassetid://1347140027",
+    ["Pop"] = "rbxassetid://198598793",
+    ["Rust"] = "rbxassetid://1255040462",
+    ["Sans"] = "rbxassetid://3188795283",
+    ["Fart"] = "rbxassetid://130833677",
+    ["Big"] = "rbxassetid://5332005053",
+    ["Vine"] = "rbxassetid://5332680810",
+    ["UwU"] = "rbxassetid://8679659744",
+    ["Bruh"] = "rbxassetid://4578740568",
+    ["Skeet"] = "rbxassetid://5633695679",
+    ["Neverlose"] = "rbxassetid://6534948092",
+    ["Fatality"] = "rbxassetid://6534947869",
+    ["Bonk"] = "rbxassetid://5766898159",
+    ["Minecraft"] = "rbxassetid://5869422451",
+    ["Gamesense"] = "rbxassetid://4817809188",
+    ["RIFK7"] = "rbxassetid://9102080552",
+    ["Bamboo"] = "rbxassetid://3769434519",
+    ["Crowbar"] = "rbxassetid://546410481",
+    ["Weeb"] = "rbxassetid://6442965016",
+    ["Beep"] = "rbxassetid://8177256015",
+    ["Bambi"] = "rbxassetid://8437203821",
+    ["Stone"] = "rbxassetid://3581383408",
+    ["Old Fatality"] = "rbxassetid://6607142036",
+    ["Click"] = "rbxassetid://8053704437",
+    ["Ding"] = "rbxassetid://7149516994",
+    ["Snow"] = "rbxassetid://6455527632",
+    ["Laser"] = "rbxassetid://7837461331",
+    ["Mario"] = "rbxassetid://2815207981",
+    ["Steve"] = "rbxassetid://4965083997",
+    ["Call of Duty"] = "rbxassetid://5952120301",
+    ["Bat"] = "rbxassetid://3333907347",
+    ["TF2 Critical"] = "rbxassetid://296102734",
+    ["Saber"] = "rbxassetid://8415678813",
+    ["Baimware"] = "rbxassetid://3124331820",
+    ["Osu"] = "rbxassetid://7149255551",
+    ["TF2"] = "rbxassetid://2868331684",
+    ["Slime"] = "rbxassetid://6916371803",
+    ["Among Us"] = "rbxassetid://5700183626",
+    ["One"] = "rbxassetid://7380502345"
+}
+-- idfk what this is but it works so i guess its fine
+local EtherealParts = Instance.new('Folder', workspace)
+EtherealParts.Name  = 'EtherealParts'
 --
 do
 	Library = {
@@ -2920,6 +3179,8 @@ do
     local flags = Library.Flags
     local Pages = {
         ["Aimbot"] = Window:Page({Name = "Aimbot"});
+		["Movement"] = Window:Page({Name = "Movement"});
+		["Misc"] = Window:Page({Name = "Misc"});
         ["Settings"] = Window:Page({Name = "Settings"});
     }
 
@@ -2929,23 +3190,75 @@ do
         local aimbot = Pages["Aimbot"]
         local aimbotsection = aimbot:Section({Name = "Aimbot", Side = "Left", })
 
-        aimbotsection:Toggle({Name = "Enabled", Flag = "enabled"}):Keybind({Flag = "aimbotbind"})
-        aimbotsection:List({Name = "Method", Flag = "method", Options = {"Camera", "Mouse"}, Default = "Mouse"})
-        aimbotsection:Toggle({Name = "Prediction", Flag = "prediction", Side = "Right"})
-        aimbotsection:Slider({Name = "Prediction X", Flag = "predx", Min = 0, Max = 1, Default = 0, Decimals = 0.0001, Side = "Right"})  
-        aimbotsection:Slider({Name = "Prediction Y", Flag = "predy", Min = 0, Max = 1, Default = 0, Decimals = 0.0001, Side = "Right"})
-        aimbotsection:List({Name = "Hitpart", Flag = "hitpart", Options = {"Head", "HumanoidRootPart"}, Default = "Head"})
-        aimbotsection:Slider({Name = "Smoothness", Flag = "smooth", Min = -1, Max = 1, Default = 0, Decimals = 0.01})
-        aimbotsection:List({Name = "Target", Flag = "target", Options = {"Player", "Dummy"}})
-        
-        local tb = Pages["Aimbot"]:Section({Name = "Triggerbot", Side = "Right"})
+	aimbotsection:Toggle({Name = "Enabled", Flag = "enabled"}):Keybind({Flag = "aimbotbind"})
+	aimbotsection:Toggle({Name = "Sticky Aim", Flag = "aimbot_sticky"})
+	aimbotsection:List({Name = "Method", Flag = "method", Options = {"Camera", "Mouse"}, Default = "Mouse"})
+	aimbotsection:Toggle({Name = "Prediction", Flag = "prediction", Side = "Right"})
+	aimbotsection:Slider({Name = "Prediction X", Flag = "predx", Min = 0, Max = 1, Default = 0, Decimals = 0.0001, Side = "Right"})  
+	aimbotsection:Slider({Name = "Prediction Y", Flag = "predy", Min = 0, Max = 1, Default = 0, Decimals = 0.0001, Side = "Right"})
+	aimbotsection:List({Name = "Hitpart", Flag = "hitpart", Options = {"Head", "HumanoidRootPart"}, Default = "Head"})
+	aimbotsection:Slider({Name = "Smoothness", Flag = "smooth", Min = -1, Max = 1, Default = 0, Decimals = 0.01})
+	aimbotsection:List({Name = "Target", Flag = "target", Options = {"Player", "Dummy"}})
 
-        tb:Toggle({Name = "Enabled", Flag = "triggerbot"}):Keybind({Flag = "triggerbotbind"})
-        tb:Slider({Name = "Delay", Flag = "delay", Min = 0, Max = 250, Default = 0, Decimals = 1, Suffix = " ms"})
+	aimbotsection:Toggle({Name = "Show FOV", Flag = "aimbot_showfov", Side = "Right"})
+	aimbotsection:Toggle({Name = "FOV Enabled", Flag = "aimbot_fovenabled", Side = "Right"})
+	aimbotsection:Slider({Name = "FOV", Flag = "aimbot_fov", Min = 0, Max = 800, Default = 100, Side = "Right"})
+	aimbotsection:Colorpicker({Name = "FOV Color", Flag = "aimbot_fovcolor", Default = Color3.fromRGB(255, 255, 255), Side = "Right"})
+	
+	local silent = Pages["Aimbot"]:Section({Name = "Silent Aim", Side = "Left"})
+	silent:Toggle({Name = "Silent Aim", Flag = "silentaim_enabled"}):Keybind({Flag = "silentaim_bind"})
+	silent:Toggle({Name = "Auto Switch Target", Flag = "silentaim_autoswitch", Side = "Left"})
+	silent:Slider({Name = "Silent Prediction", Flag = "silentaim_prediction", Min = 0, Max = 500, Default = 135, Decimals = 1})
+	silent:List({Name = "Silent Hitpart", Flag = "silentaim_hitpart", Options = {"Head", "HumanoidRootPart"}, Default = "Head"})
+	silent:Toggle({Name = "View Target", Flag = "view", Default = false})
+
+	silent:Toggle({Name = "Show FOV", Flag = "silentaim_showfov", Side = "Right"})
+	silent:Slider({Name = "FOV", Flag = "silentaim_fov", Min = 0, Max = 800, Default = 100, Side = "Right"})
+	silent:Colorpicker({Name = "FOV Color", Flag = "silentaim_fovcolor", Default = Color3.fromRGB(255, 255, 255), Side = "Right"})
+
+        local tb = Pages["Aimbot"]:Section({Name = "Triggerbot", Side = "Right"})
+		
+
+		tb:Toggle({Name = "Enabled", Flag = "triggerbot_enabled"}):Keybind({Flag = "triggerbot_bind"})
+		tb:Toggle({Name = "Team Check", Flag = "triggerbot_teamcheck"})
+		tb:Toggle({Name = "Visibility Check", Flag = "triggerbot_vischeck"})
+		tb:List({Name = "Target Part", Flag = "triggerbot_part", Options = {"Head", "HumanoidRootPart", "Torso"}, Default = "Head"})
+		tb:Slider({Name = "Hit Chance", Flag = "triggerbot_hitchance", Min = 0, Max = 100, Default = 100, Suffix = "%"})
+		tb:Slider({Name = "Delay", Flag = "triggerbot_delay", Min = 0, Max = 1, Default = 0, Decimals = 0.001})
+		tb:Toggle({Name = "Show FOV", Flag = "triggerbot_showfov"})
+		tb:Slider({Name = "FOV", Flag = "triggerbot_fov", Min = 0, Max = 800, Default = 100})
+		tb:Colorpicker({Name = "FOV Color", Flag = "triggerbot_fovcolor", Default = Color3.fromRGB(255, 255, 255)})
+
     end
 
+	do
+		local move = Pages["Movement"]
+		local movesec = move:Section({Name = "Movement", Side = "Left"})
 
+		movesec:Toggle({Name = "CFrame Speed", Flag = "cfspd", Default = false}):Keybind({Flag = "spdbind"})
+		movesec:Slider({Name = "Speed", Flag = "speed", Min = 0, Max = 10, Default = 3, Decimals = 0.1})
+	end
 
+	do
+		local misc = Pages["Misc"]
+		local miscsec = misc:Section({Name = "On Hit", Side = "Left"})
+		local miscsec2 = misc:Section({Name = "Anti", Side = "Left"})
+
+		miscsec:Toggle({Name = "Hit Detection", Flag = "hitdetection", Default = false})
+		miscsec:Toggle({Name = "Hit Sounds", Flag = "hitsound", Defaul = false})
+		miscsec:List({Name = "Hit Sound", Flag = "hitsoundid", Options = {"Bubble", "Rust", "Skeet", "Neverlose", "Fatality", "Minecraft", "Gamesense", "RIFK7", "Old Fatality", "Baimware", "Call of Duty"}, Default = "Rust"})
+		miscsec:Toggle({Name = "Hit Chams", Flag = "hitchams", Default = false, Side = "Right"}):Colorpicker({Flag = "hitchamscolor", Default = Color3.fromRGB(255, 0, 0)})
+
+		miscsec2:Toggle({Name = "enable", Flag = "desyncenable", Default = false}):Keybind({Flag = "desyncbind", Default = nil, Callback = function(state)
+			desyncenabled = state
+			if not state and C_Desync["OldPosition"] then
+				LocalPlayer.Character.HumanoidRootPart.CFrame = C_Desync["OldPosition"]
+				C_Desync["OldPosition"] = nil
+			end
+		end})
+		miscsec2:Toggle({Name = "Visualize", Flag = "visualize", Default = false})
+		miscsec2:Slider({Name = "Random Range", Flag = "random range", Min = 0, Max = 50, Default = 5, Interval = 1})
+	end
     do
         local Config = Pages["Settings"]:Section({Name = "Config", LeftTitle = "Config", RightTitle = "Lua Addons"}) do
             local CFGList = Config:List({Name = "Config list", Flag = "SettingConfigurationList", Options = {}})
@@ -3128,6 +3441,73 @@ local function ClosestPlr(Part)
     return Closest
 end
 
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    local flags = Library.Flags
+    if flags["silentaim_enabled"] and input.KeyCode == (flags["silentaim_bind"] or Enum.KeyCode.E) then
+        local hitpart = flags["silentaim_hitpart"] or "Head"
+        SilentAimTarget = ClosestPlr(hitpart)
+        SilentAimLocked = SilentAimTarget ~= nil
+    end
+end)
+
+local function playHitsound()
+    if not Library.Flags["hitsound"] then return end
+    local id = getgenv().hitsounds[Library.Flags["hitsoundid"] or "Rust"]
+    if not id then return end
+    local sound = Instance.new("Sound")
+    sound.SoundId = id
+    sound.Volume = 1
+    sound.Parent = game:GetService("SoundService")
+    sound:Play()
+    game:GetService("Debris"):AddItem(sound, 2)
+end
+
+local function HitEffect(Player, Type)
+    local Character = Player.Character
+    local RootPart  = Character and Character:FindFirstChild('HumanoidRootPart')
+    local flags = Library.Flags
+
+    if Character and RootPart then
+        if Type == 'Clone' then
+            Character.Archivable  = true
+
+            local Clone = Character:Clone()
+            Clone.Parent = EtherealParts
+            Clone.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+
+            for _, v in pairs(Clone:GetDescendants()) do
+                if v:IsA('BasePart') then
+                    v.Material = Enum.Material.ForceField -- or Enum.Material.Neon
+                    v.Color = flags["hitchamscolor"] or Color3.fromRGB(255, 0, 0)
+                    v.CanCollide = false
+                    v.Anchored = true
+                    v.CanQuery = false
+                    v.CanTouch = false
+                end
+                if v:IsA('Accessory') or v:IsA('Tool') then
+                    v:Destroy()
+                end
+            end
+
+            for _, v in pairs(Character:GetDescendants()) do
+                if v:IsA('BasePart') then
+                    local ClonePart = Clone:FindFirstChild(v.Name)
+                    if ClonePart then
+                        ClonePart.CFrame = v.CFrame
+                    end
+                end
+            end
+
+            Clone:PivotTo(Character.PrimaryPart.CFrame + Vector3.new(1.5, 0, 1.5))
+            Character.Archivable = false
+            game:GetService('Debris'):AddItem(Clone, 2)
+        end
+    end
+end
+
+getgenv().lastHealth = getgenv().lastHealth or {}
+
 RunService.heartbeat:Connect(function()
     for _, func in pairs(framework) do
         if type(func) == "function" then
@@ -3138,141 +3518,394 @@ end)
 
 
 do -- frameworks
-	function framework:aimbot()
+	function framework:desync()
 		local flags = Library.Flags
-		local userinputservice = game:GetService("UserInputService")
-		
-		local isenabled = flags["enabled"] or false
-		local keypressed = (flags["aimbotbind_KEY STATE"] == "Always") or 
-						  (flags["aimbotbind_KEY STATE"] == "Hold" and userinputservice:IsKeyDown(flags["aimbotbind_KEY"])) or
-						  (flags["aimbotbind_KEY STATE"] == "Toggle" and flags["aimbotbind"])
-	
-		if isenabled and keypressed then
-			local target = nil
-			if flags["target"] == "Player" then
-				target = ClosestPlr(flags["hitpart"])
-				if target and target.Character then
-					target = target.Character
-				end
-			else
-				target = GetTargetDummy()
-			end
-	
-			if target then
-				local targetpart = target[flags["hitpart"]]
-				if not targetpart then return end
-	
-				local predictedposition = targetpart.Position
-				if flags["prediction"] then
-					local velocity = targetpart.AssemblyLinearVelocity
-					predictedposition = targetpart.Position + Vector3.new(
-						velocity.X * flags["predx"],
-						velocity.Y * flags["predy"],
-						velocity.Z * flags["predx"]
-					)
-				end
-	
-				if flags["frameskip"] then
-					framework.lastY = framework.lastY or targetpart.Position.Y
-					framework.isJumping = framework.isJumping or false
-					framework.jumpStartTime = framework.jumpStartTime or 0
-				
-					local velocity = targetpart.AssemblyLinearVelocity
-					
-					if velocity.Y > 1 and not framework.isJumping then
-						framework.isJumping = true
-						framework.jumpStartTime = tick()
-					end
-				
-					if velocity.Y < 0 and framework.isJumping then
-						framework.isJumping = false
-					end
-				
-					if framework.isJumping then
-						local jumpTime = tick() - framework.jumpStartTime
-						if jumpTime < 0.15 then
-							local position = predictedposition
-							local currentcframe = Workspace.CurrentCamera.CFrame
-							local targetcframe = CFrame.new(currentcframe.Position, position)
-							Workspace.CurrentCamera.CFrame = currentcframe:Lerp(targetcframe, 0.5)
-						end
-				
-					framework.lastY = targetpart.Position.Y
-					
-					if framework.isJumping then return end
-				end
-				
-					framework.lastY = targetpart.Position.Y
-					
-					if framework.isJumping then return end
-				end
-	
-				local smoothness = flags["smooth"] or 1
-				smoothness = 1 - smoothness
-				
-				if flags["method"] == "Mouse" then
-					local position, onscreen = Workspace.CurrentCamera:WorldToViewportPoint(predictedposition)
-					if onscreen then
-						local mousepos = userinputservice:GetMouseLocation()
-						local targetpos = Vector2.new(position.X, position.Y)
-						local mousedelta = (targetpos - mousepos) * smoothness
-						mousemoverel(mousedelta.X, mousedelta.Y)
-					end
-				else
-					local currentcframe = Workspace.CurrentCamera.CFrame
-					local targetcframe = CFrame.new(currentcframe.Position, predictedposition)
-					local newcframe = currentcframe:Lerp(targetcframe, smoothness)
-					Workspace.CurrentCamera.CFrame = newcframe
-				end
-			end
-		end
-	end
+        if flags["desyncenable"] and desyncenabled and LocalPlayer.Character then
+            C_Desync["OldPosition"] = LocalPlayer.Character.HumanoidRootPart.CFrame
+            local Origin = LocalPlayer.Character.HumanoidRootPart
+			local TargOrigin = SilentAimTarget and SilentAimTarget.Character and SilentAimTarget.Character.HumanoidRootPart
+            local randomRange = flags["random range"]
+			LocalPlayer.Character.HumanoidRootPart.CFrame = (CFrame.new(TargOrigin.Position) + Vector3.new(math.random(-randomRange, randomRange), math.random(-randomRange, randomRange), math.random(-randomRange, randomRange))) * CFrame.Angles(math.rad(math.random(-180, 180)), math.rad(math.random(-180, 180)), math.rad(math.random(-180, 180)))
+            if flags["visualize"] then 
+                bodyClone:SetPrimaryPartCFrame(LocalPlayer.Character.HumanoidRootPart.CFrame)	
+                visualizeChams.FillColor = col1 or Color3.new(1, 0, 0)
+                visualizeChams.FillTransparency = 0.5
+                visualizeChams.OutlineColor = col2 or Color3.new(1, 0, 0)
+                visualizeChams.OutlineTransparency = 0.5
+            end
 
-    function framework:triggerbot()
+            game:GetService("RunService").RenderStepped:Wait()
+            
+            LocalPlayer.Character.HumanoidRootPart.CFrame = C_Desync["OldPosition"]
+            framework:cfspd()
+        else 
+            bodyClone:SetPrimaryPartCFrame(CFrame.new(9999,9999,9999))	
+    end
+end
+    function framework:aimbot()
         local flags = Library.Flags
         local userinputservice = game:GetService("UserInputService")
-        local mouse = game.Players.LocalPlayer:GetMouse()
-        
-        local isenabled = flags["triggerbot_enabled"] or false
-        local keypressed = (flags["triggerbotbind_KEY STATE"] == "Always") or 
-                          (flags["triggerbotbind_KEY STATE"] == "Hold" and userinputservice:IsKeyDown(flags["triggerbotbind_KEY"])) or
-                          (flags["triggerbotbind_KEY STATE"] == "Toggle" and flags["triggerbotbind"])
-    
-        if isenabled and keypressed then
-            local target = mouse.Target
-            if target and target.Parent then
-                local humanoid = target.Parent:FindFirstChildOfClass("Humanoid")
-                if humanoid and humanoid.Health > 0 then
-                    local targetPlayer = Players:GetPlayerFromCharacter(target.Parent)
-                    if targetPlayer and targetPlayer ~= LocalPlr then
-                        if (flags["target"] == "Player" and targetPlayer) or 
-                           (flags["target"] == "Dummy") then
-                            
-                            task.wait(flags["delay"])
-                            mouse1press()
-                            
-                            task.spawn(function()
-                                repeat
-                                    RunService.RenderStepped:Wait()
-                                until not (mouse.Target and mouse.Target.Parent and 
-                                         mouse.Target.Parent:FindFirstChildOfClass("Humanoid"))
-                                mouse1release()
-                            end)
+
+        local isenabled = flags["enabled"] or false
+        local keypressed = (flags["aimbotbind_KEY STATE"] == "Always") or 
+                          (flags["aimbotbind_KEY STATE"] == "Hold" and userinputservice:IsKeyDown(flags["aimbotbind_KEY"])) or
+                          (flags["aimbotbind_KEY STATE"] == "Toggle" and flags["aimbotbind"])
+
+        if not self.aimbot_fov_circle then
+            self.aimbot_fov_circle = Drawing.new("Circle")
+            self.aimbot_fov_circle.Thickness = 1
+            self.aimbot_fov_circle.NumSides = 100
+            self.aimbot_fov_circle.Filled = false
+        end
+        local show_fov = flags["aimbot_showfov"]
+        self.aimbot_fov_circle.Visible = show_fov and isenabled
+        self.aimbot_fov_circle.Radius = flags["aimbot_fov"] or 100
+        self.aimbot_fov_circle.Color = flags["aimbot_fovcolor"] or Color3.new(1,1,1)
+        self.aimbot_fov_circle.Position = UserInputService:GetMouseLocation()
+
+        self._aimbot_last_enabled = self._aimbot_last_enabled or false
+        self._aimbot_sticky_target = self._aimbot_sticky_target or nil
+        local sticky = flags["aimbot_sticky"]
+
+        if not isenabled or not keypressed then
+            self._aimbot_sticky_target = nil
+            self._aimbot_last_enabled = false
+            return
+        end
+
+        if not self._aimbot_last_enabled then
+            self._aimbot_sticky_target = nil
+        end
+        self._aimbot_last_enabled = true
+
+        local function closest_plr(part)
+            local dist, closest = math.huge, nil
+            local mousepos = UserInputService:GetMouseLocation()
+            local fov_enabled = flags["aimbot_fovenabled"]
+            local fov = flags["aimbot_fov"] or 100
+            for _, target in pairs(Players:GetPlayers()) do
+                if target ~= LocalPlr and target.Character and target.Character:FindFirstChild(part) then
+                    local pos, onscreen = Camera:WorldToViewportPoint(target.Character[part].Position)
+                    if onscreen then
+                        local mag = (Vector2.new(pos.X, pos.Y) - mousepos).Magnitude
+                        if (not fov_enabled or mag <= fov) and mag < dist then
+                            closest = target
+                            dist = mag
                         end
                     end
                 end
             end
+            return closest
+        end
+
+        local target = nil
+        if sticky and self._aimbot_sticky_target then
+            local t = self._aimbot_sticky_target
+            if t and t.Character and t.Character:FindFirstChild(flags["hitpart"]) then
+                local pos, onscreen = Camera:WorldToViewportPoint(t.Character[flags["hitpart"]].Position)
+                if onscreen then
+                    target = t.Character
+                end
+            end
+        end
+        if not target then
+            if flags["target"] == "Player" then
+                local closest = closest_plr(flags["hitpart"])
+                if closest and sticky then
+                    self._aimbot_sticky_target = closest
+                end
+                if closest and closest.Character then
+                    target = closest.Character
+                end
+            else
+                target = GetTargetDummy()
+                if sticky then
+                    self._aimbot_sticky_target = target
+                end
+            end
+        end
+
+
+        if not target then return end
+
+        local targetpart = target[flags["hitpart"]]
+        if not targetpart then return end
+
+        local predictedposition = targetpart.Position
+        if flags["prediction"] then
+            local velocity = targetpart.AssemblyLinearVelocity
+            predictedposition = targetpart.Position + Vector3.new(
+                velocity.X * flags["predx"],
+                velocity.Y * flags["predy"],
+                velocity.Z * flags["predx"]
+            )
+        end
+
+        local smoothness = flags["smooth"] or 1
+        smoothness = 1 - smoothness
+
+        if flags["method"] == "Mouse" then
+            local position, onscreen = Camera:WorldToViewportPoint(predictedposition)
+            if onscreen then
+                local mousepos = userinputservice:GetMouseLocation()
+                local targetpos = Vector2.new(position.X, position.Y)
+                local mousedelta = (targetpos - mousepos) * smoothness
+                mousemoverel(mousedelta.X, mousedelta.Y)
+            end
+        else
+            local currentcframe = Camera.CFrame
+            local targetcframe = CFrame.new(currentcframe.Position, predictedposition)
+            local newcframe = currentcframe:Lerp(targetcframe, smoothness)
+            Camera.CFrame = newcframe
         end
     end
+
+    function framework:triggerbot()
+        local flags = Library.Flags
+        local enabled = flags["triggerbot_enabled"]
+        local key_state = flags["triggerbot_bind_KEY STATE"]
+        local key = flags["triggerbot_bind_KEY"]
+        local key_active =
+            (key_state == "Always") or
+            (key_state == "Hold" and UserInputService:IsKeyDown(key)) or
+            (key_state == "Toggle" and flags["triggerbot_bind"])
+
+        if not self.triggerbot_fov_circle then
+            self.triggerbot_fov_circle = Drawing.new("Circle")
+            self.triggerbot_fov_circle.Thickness = 1
+            self.triggerbot_fov_circle.NumSides = 100
+            self.triggerbot_fov_circle.Filled = false
+        end
+        local show_fov = flags["triggerbot_showfov"]
+        self.triggerbot_fov_circle.Visible = show_fov and enabled
+        self.triggerbot_fov_circle.Radius = flags["triggerbot_fov"] or 100
+        self.triggerbot_fov_circle.Color = flags["triggerbot_fovcolor"] or Color3.new(1,1,1)
+        self.triggerbot_fov_circle.Position = UserInputService:GetMouseLocation()
+
+        if not (enabled and key_active) then return end
+
+        local function valid_target(plr)
+            if not plr or plr == LocalPlr then return false end
+            local char = plr.Character
+            if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then return false end
+            if flags["triggerbot_teamcheck"] and plr.Team == LocalPlr.Team then return false end
+            if flags["triggerbot_vischeck"] then
+                local part = char:FindFirstChild(flags["triggerbot_part"])
+                if part then
+                    local ray = Ray.new(Camera.CFrame.Position, (part.Position - Camera.CFrame.Position).Unit * 1000)
+                    local hit = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlr.Character, Camera})
+                    if not hit or not hit:IsDescendantOf(char) then
+                        return false
+                    end
+                end
+            end
+            return true
+        end
+
+        local function get_target()
+            local closest, dist = nil, math.huge
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if valid_target(plr) then
+                    local char = plr.Character
+                    local part = char and char:FindFirstChild(flags["triggerbot_part"])
+                    if part then
+                        local pos, onscreen = Camera:WorldToViewportPoint(part.Position)
+                        if onscreen then
+                            local mag = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
+                            if mag <= (flags["triggerbot_fov"] or 100) and mag < dist then
+                                closest, dist = plr, mag
+                            end
+                        end
+                    end
+                end
+            end
+            return closest
+        end
+
+        local tgt = get_target()
+		if tgt and math.random(1, 100) <= (flags["triggerbot_hitchance"] or 100) then
+			if flags["hitsound"] then playHitsound() end
+			if flags["hitchams"] then HitEffect(tgt, "Clone") end
+			task.wait(flags["triggerbot_delay"] or 0)
+			mouse1press()
+			task.wait(0.05)
+			mouse1release()
+		end
+    end
+
+    function framework:silentaim()
+        local self = self or framework -- ensure self is not nil
+        local flags = Library.Flags
+        local enabled = flags["silentaim_enabled"]
+        local key_state = flags["silentaim_bind_KEY STATE"]
+        local key = flags["silentaim_bind_KEY"]
+        local key_active =
+            (key_state == "Always") or
+            (key_state == "Hold" and UserInputService:IsKeyDown(key)) or
+            (key_state == "Toggle" and flags["silentaim_bind"])
+
+        if not self.silentaim_fov_circle then
+            self.silentaim_fov_circle = Drawing.new("Circle")
+            self.silentaim_fov_circle.Thickness = 1
+            self.silentaim_fov_circle.NumSides = 100
+            self.silentaim_fov_circle.Filled = false
+        end
+        local show_fov = flags["silentaim_showfov"]
+        self.silentaim_fov_circle.Visible = show_fov and enabled
+        self.silentaim_fov_circle.Radius = flags["silentaim_fov"] or 100
+        self.silentaim_fov_circle.Color = flags["silentaim_fovcolor"] or Color3.new(1,1,1)
+        self.silentaim_fov_circle.Position = UserInputService:GetMouseLocation()
+
+		if not enabled or not key_active then
+			SilentAimLocked = false
+			SilentAimTarget = nil
+		end
+
+        local function closest_plr_in_fov(part)
+            local dist, closest = math.huge, nil
+            local mousepos = UserInputService:GetMouseLocation()
+            local fov = flags["silentaim_fov"] or 100
+            for _, target in pairs(Players:GetPlayers()) do
+                if target ~= LocalPlr and target.Character and target.Character:FindFirstChild(part) then
+                    local pos, onscreen = Camera:WorldToViewportPoint(target.Character[part].Position)
+                    if onscreen then
+                        local mag = (Vector2.new(pos.X, pos.Y) - mousepos).Magnitude
+                        if mag <= fov and mag < dist then
+                            closest = target
+                            dist = mag
+                        end
+                    end
+                end
+            end
+            return closest
+        end
+
+		if flags["view"] and SilentAimTarget and SilentAimTarget.Character then
+			Camera.CameraSubject = SilentAimTarget.Character.Humanoid
+		else
+			Camera.CameraSubject = LocalPlayer.Character.Humanoid;
+		end
+
+        local autoswitch = flags["silentaim_autoswitch"]
+        local hitpart = flags["silentaim_hitpart"] or "Head"
+
+        if autoswitch then
+            SilentAimTarget = closest_plr_in_fov(hitpart)
+            SilentAimLocked = SilentAimTarget ~= nil
+        else
+            if not SilentAimLocked or not SilentAimTarget or not SilentAimTarget.Character or not SilentAimTarget.Character:FindFirstChild(hitpart) then
+                SilentAimTarget = closest_plr_in_fov(hitpart)
+                SilentAimLocked = SilentAimTarget ~= nil
+            end
+        end
+
+        if not self._silentaim_hooked then
+            self._silentaim_hooked = true
+            local oldIndex
+            oldIndex = hookmetamethod(game, "__index", function(obj, key, ...)
+                if obj:IsA("Mouse") and key == "Hit" and SilentAimLocked and SilentAimTarget and SilentAimTarget.Character then
+                    local hitpart = flags["silentaim_hitpart"] or "Head"
+                    local prediction = flags["silentaim_prediction"] or 135
+                    local char = SilentAimTarget.Character
+                    if char:FindFirstChild(hitpart) then
+                        local part = char[hitpart]
+                        local velocity = part.Velocity or Vector3.new()
+                        local predictionTime = math.clamp(prediction, 1, 1000) / 1000
+                        local predictedPosition = part.Position + (velocity * predictionTime)
+                        return CFrame.new(predictedPosition)
+                    end
+                end
+                return oldIndex(obj, key, ...)
+            end)
+			local __index
+			__index = hookmetamethod(game, "__index", LPH_NO_VIRTUALIZE(function(Self, Index)
+				if not checkcaller() and flags["desyncenable"] and C_Desync["OldPosition"] and Index == "CFrame" and Self == LocalPlayer.Character.HumanoidRootPart then
+					return C_Desync["OldPosition"]
+				end
+				return __index(Self, Index)
+			end))
+        end
+    end
+
+	function framework:cfspd()
+		local flags = Library.Flags
+		local enabled = flags["cfspd"] or false
+		local keypressed = (flags["spdbind_KEY STATE"] == "Always") or 
+						  (flags["spdbind_KEY STATE"] == "Hold" and UserInputService:IsKeyDown(flags["spdbind_KEY"])) or
+						  (flags["spdbind_KEY STATE"] == "Toggle" and flags["spdbind"])
+
+		if not enabled or not keypressed then return end
+
+		local speed = flags["speed"] or 3
+		LocalPlr.Character.HumanoidRootPart.CFrame = LocalPlr.Character.HumanoidRootPart.CFrame + LocalPlr.Character.Humanoid.MoveDirection * speed
+	end
 end
 
+-- cuz i hate myself we're gonna try a diff hit detection method
+do
+	function framework:hitdetect()
+		local Flags = Library.Flags
+		local Gun = LocalPlr.Character:FindFirstChildWhichIsA("Tool")
+		local connection = Flags["hitdetection"]
+	
+		if Gun ~= PreviousGun and connection then
+			PreviousGun = Gun
+			PreviousAmmo = 999
+			connection = nil
+		end
 
-
-
-
-
-
-
+		if not connection and Gun and Gun:FindFirstChild("Ammo") and Gun.Ammo.Value then
+			connection = Gun.Ammo:GetPropertyChangedSignal("Value"):Connect(function()
+				local CurrentAmmo = Gun.Ammo.Value
+				if PreviousAmmo == nil then
+					PreviousAmmo = CurrentAmmo
+				end
+				if CurrentAmmo < PreviousAmmo then
+					local ChildrenAdded = 0;
+					local ChildAdded;
+					local IgnoreList = {LocalPlr.Character, Gun.Handle};
+					ChildAdded = Workspace.Ignored.Siren.Radius.ChildAdded:Connect(function(Object)
+						if Object.Name == "BULLET_RAYS" then
+							ChildrenAdded += 1;
+							if (table.find({"[Double-Barrel SG", "[TacticalShotgun]", "[Shotgun]"}, Gun.Name) and ChildrenAdded <= 5) or ChildrenAdded == 1 then
+								local pos = Object.CFrame.Position;
+								local LookVector = Object.CFrame.LookVector;
+								--
+								local raycastparams = RaycastParams.new()
+								raycastparams.FilterType = Enum.RaycastFilterType.Exclude
+								raycastparams.IgnoreWater = true
+								raycastparams.FilterDescendantsInstances = IgnoreList
+								local Ray = Workspace:Raycast(pos, LookVector * 1000, raycastparams)
+								if not Ray then return end
+								local hitposition = Ray.Position
+								local HitInstance = Ray.Instance
+								--
+								delay(0.001, function()
+									if HitInstance then
+										local InstanceHit = HitInstance:FindFirstAncestorOfClass("Model")
+										if not InstanceHit then return end
+	
+										if InstanceHit:FindFirstChild("Humanoid") and InstanceHit:FindFirstChild("HumanoidRootPart") then
+											local HitPlayer = Players:GetPlayerFromCharacter(InstanceHit)
+											if HitPlayer and HitPlayer ~= LocalPlr then
+												if Flags["hitsound"] then playHitsound() end
+												if Flags["hitchams"] then HitEffect(HitPlayer, "Clone") end
+											end
+										end	
+									end
+									ChildAdded:Disconnect()
+								end)
+							end
+						else
+							ChildAdded:Disconnect()
+						end
+					end)
+				end
+				PreviousAmmo = CurrentAmmo
+			end)
+		end
+	end
+end
 
 
 
