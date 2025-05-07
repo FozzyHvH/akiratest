@@ -3211,6 +3211,7 @@ do
 	silent:Slider({Name = "Silent Prediction", Flag = "silentaim_prediction", Min = 0, Max = 500, Default = 135, Decimals = 1})
 	silent:List({Name = "Silent Hitpart", Flag = "silentaim_hitpart", Options = {"Head", "HumanoidRootPart"}, Default = "Head"})
 	silent:Toggle({Name = "View Target", Flag = "view", Default = false})
+    silent:List({Name = "Target", Flag = "starget", Options = {"Player", "Dummy"}})
 
 	silent:Toggle({Name = "Show FOV", Flag = "silentaim_showfov", Side = "Right"})
 	silent:Slider({Name = "FOV", Flag = "silentaim_fov", Min = 0, Max = 800, Default = 100, Side = "Right"})
@@ -3737,6 +3738,23 @@ do -- frameworks
 			SilentAimTarget = nil
 		end
 
+        local function is_visible(target, part)
+            if not flags["silentaim_vischeck"] then
+                return true
+            end
+            local char = target.Character
+            if not char or not char:FindFirstChild(part) then return false end
+            local hitpart = char:FindFirstChild(part)
+            if hitpart then
+                local ray = Ray.new(Camera.CFrame.Position, (hitpart.Position - Camera.CFrame.Position).Unit * 1000)
+                local hit = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlr.Character, Camera})
+                if not hit or not hit:IsDescendantOf(char) then
+                    return false
+                end
+            end
+            return true
+        end
+
         local function closest_plr_in_fov(part)
             local dist, closest = math.huge, nil
             local mousepos = UserInputService:GetMouseLocation()
@@ -3746,7 +3764,7 @@ do -- frameworks
                     local pos, onscreen = Camera:WorldToViewportPoint(target.Character[part].Position)
                     if onscreen then
                         local mag = (Vector2.new(pos.X, pos.Y) - mousepos).Magnitude
-                        if mag <= fov and mag < dist then
+                        if mag <= fov and mag < dist and is_visible(target, part) then
                             closest = target
                             dist = mag
                         end
@@ -3765,15 +3783,26 @@ do -- frameworks
         local autoswitch = flags["silentaim_autoswitch"]
         local hitpart = flags["silentaim_hitpart"] or "Head"
 
-        if autoswitch then
-            SilentAimTarget = closest_plr_in_fov(hitpart)
-            SilentAimLocked = SilentAimTarget ~= nil
-        else
-            if not SilentAimLocked or not SilentAimTarget or not SilentAimTarget.Character or not SilentAimTarget.Character:FindFirstChild(hitpart) then
-                SilentAimTarget = closest_plr_in_fov(hitpart)
-                SilentAimLocked = SilentAimTarget ~= nil
-            end
-        end
+		if flags["starget"] == "Dummy" then
+			local dummy = GetTargetDummy()
+			if dummy and dummy:FindFirstChild(hitpart) then
+				SilentAimTarget = {Character = dummy}
+				SilentAimLocked = true
+			else
+				SilentAimTarget = nil
+				SilentAimLocked = false
+			end
+		else
+			if autoswitch then
+				SilentAimTarget = closest_plr_in_fov(hitpart)
+				SilentAimLocked = SilentAimTarget ~= nil
+			else
+				if not SilentAimLocked or not SilentAimTarget or not SilentAimTarget.Character or not SilentAimTarget.Character:FindFirstChild(hitpart) then
+					SilentAimTarget = closest_plr_in_fov(hitpart)
+					SilentAimLocked = SilentAimTarget ~= nil
+				end
+			end
+		end
 
         if not self._silentaim_hooked then
             self._silentaim_hooked = true
